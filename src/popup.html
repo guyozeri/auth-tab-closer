@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>auth-tab-closer</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header>
+      <strong>auth-tab-closer</strong>
+      <label class="switch">
+        <input type="checkbox" id="enabled" />
+        <span class="slider"></span>
+      </label>
+    </header>
+
+    <p id="state" class="state"></p>
+
+    <h2>Recently closed</h2>
+    <ul id="recent"></ul>
+
+    <a id="openOptions" href="#">Options</a>
+    <script src="popup.js"></script>
+  </body>
+</html>

@@ -1,0 +1,11 @@
+{
+  "name": "auth-tab-closer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chrome extension that auto-closes finished authentication tabs.",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.js\"",
+    "zip": "rm -f auth-tab-closer.zip && zip -r auth-tab-closer.zip manifest.json src icons -x '*.DS_Store'"
+  }
+}

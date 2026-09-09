@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>auth-tab-closer — Options</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <h1>auth-tab-closer</h1>
+      <p class="sub">
+        Detects finished authentication tabs and closes them for you, with a
+        reversible notification.
+      </p>
+
+      <section>
+        <label class="row toggle">
+          <input type="checkbox" id="enabled" />
+          <span>Enabled</span>
+        </label>
+
+        <label class="row toggle">
+          <input type="checkbox" id="showNotification" />
+          <span>Show a notification when a tab is closed (with Reopen)</span>
+        </label>
+
+        <label class="row toggle">
+          <input type="checkbox" id="closeLastTab" />
+          <span>Allow closing the last tab in a window</span>
+        </label>
+
+        <label class="row">
+          <span>Delay before closing</span>
+          <span class="field">
+            <input type="number" id="closeDelayMs" min="0" step="250" />
+            <em>ms</em>
+          </span>
+        </label>
+
+        <label class="row">
+          <span>
+            Max tab age for weak matches
+            <small
+              >Weak "login successful" pages older than this are left alone.
+              Strong/known-provider pages ignore this.</small
+            >
+          </span>
+          <span class="field">
+            <input type="number" id="maxTabAgeSeconds" min="0" step="10" />
+            <em>s</em>
+          </span>
+        </label>
+      </section>
+
+      <section>
+        <h2>Host filter</h2>
+        <div class="row">
+          <label class="radio">
+            <input type="radio" name="listMode" value="block" />
+            <span>Block list — never close tabs on these hosts</span>
+          </label>
+          <label class="radio">
+            <input type="radio" name="listMode" value="allow" />
+            <span>Allow list — only close tabs on these hosts</span>
+          </label>
+        </div>
+        <textarea
+          id="hostList"
+          rows="4"
+          placeholder="one hostname per line, e.g. github.com"
+        ></textarea>
+      </section>
+
+      <section>
+        <h2>Extra strong phrases</h2>
+        <p class="sub">
+          One per line. Any page containing one of these is treated as a
+          closeable auth tab.
+        </p>
+        <textarea
+          id="extraStrongPhrases"
+          rows="3"
+          placeholder="e.g. you can return to your terminal"
+        ></textarea>
+      </section>
+
+      <div class="actions">
+        <button id="save" type="button">Save</button>
+        <span id="status" aria-live="polite"></span>
+      </div>
+
+      <section>
+        <h2>Recently closed</h2>
+        <ul id="recent" class="recent"></ul>
+      </section>
+    </main>
+    <script src="options.js"></script>
+  </body>
+</html>
