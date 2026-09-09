@@ -19,6 +19,7 @@
   let debounceTimer = null;
   let observer = null;
   let stopTimer = null;
+  let extraPhrases = []; // cached once at start; rarely changes mid-page
 
   function visibleText() {
     // innerText respects visibility / display; fall back to textContent.
@@ -28,41 +29,41 @@
     return t.slice(0, 20000);
   }
 
-  function getExtraPhrases(cb) {
+  function loadExtraPhrases(cb) {
     try {
       chrome.storage.sync.get({ extraStrongPhrases: [] }, (res) => {
-        cb(Array.isArray(res.extraStrongPhrases) ? res.extraStrongPhrases : []);
+        extraPhrases = Array.isArray(res.extraStrongPhrases)
+          ? res.extraStrongPhrases
+          : [];
+        cb();
       });
     } catch (_) {
-      cb([]);
+      cb();
     }
   }
 
   function check() {
     if (reported) return;
-    getExtraPhrases((extraStrongPhrases) => {
-      if (reported) return;
-      const verdict = RULES.evaluate({
-        text: visibleText(),
-        title: document.title,
-        host: location.hostname,
-        extraStrongPhrases,
-      });
-      if (!verdict.match) return;
-      reported = true;
-      teardown();
-      try {
-        chrome.runtime.sendMessage({
-          type: "AUTH_TAB_MATCH",
-          reason: verdict.reason,
-          score: verdict.score,
-          url: location.href,
-          title: document.title,
-        });
-      } catch (_) {
-        /* service worker asleep / context gone — nothing we can do */
-      }
+    const verdict = RULES.evaluate({
+      text: visibleText(),
+      title: document.title,
+      host: location.hostname,
+      extraStrongPhrases: extraPhrases,
     });
+    if (!verdict.match) return;
+    reported = true;
+    teardown();
+    try {
+      chrome.runtime.sendMessage({
+        type: "AUTH_TAB_MATCH",
+        reason: verdict.reason,
+        score: verdict.score,
+        url: location.href,
+        title: document.title,
+      });
+    } catch (_) {
+      /* service worker asleep / context gone — nothing we can do */
+    }
   }
 
   function scheduleCheck() {
@@ -78,15 +79,17 @@
   }
 
   function start() {
-    check();
-    if (reported) return;
-    observer = new MutationObserver(scheduleCheck);
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true,
-      characterData: true,
+    loadExtraPhrases(() => {
+      check();
+      if (reported) return;
+      observer = new MutationObserver(scheduleCheck);
+      observer.observe(document.documentElement, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+      });
+      stopTimer = setTimeout(teardown, OBSERVE_MS);
     });
-    stopTimer = setTimeout(teardown, OBSERVE_MS);
   }
 
   if (document.readyState === "loading") {
