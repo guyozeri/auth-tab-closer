@@ -66,7 +66,7 @@ function notifyClosed(host, url) {
     iconUrl: chrome.runtime.getURL("icons/128.png"),
     title: "Closed auth tab",
     message: host || url,
-    contextMessage: "auth-tab-closer",
+    contextMessage: "Auth Tab Closer",
     buttons: [{ title: "Reopen" }],
     priority: 0,
   });
