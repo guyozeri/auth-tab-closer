@@ -9,6 +9,11 @@ device flow, and friends.
 When a tab is closed you get a Chrome notification with a **Reopen** button, and
 the last several closed tabs are listed in the popup and options page.
 
+The popup also has a **Close auth tabs now** button that checks every open tab and
+closes the finished-auth ones immediately (no delay, works even while auto-close is
+paused). It still skips pinned tabs, respects your host block/allow list, and won't
+close the last tab in a window unless you allow that in Options.
+
 ## How it works
 
 | Piece | Role |
@@ -17,7 +22,7 @@ the last several closed tabs are listed in the popup and options page.
 | `src/content.js` | Runs on every page. Reads visible text immediately and again as the DOM changes for ~10s (to catch SPA / redirect-rendered confirmation screens). Sends one message to the service worker on a match; never closes anything itself. |
 | `src/background.js` | Service worker. Applies safety guards, waits a short delay, closes the tab, records it, and shows the notification. |
 | `src/options.*` | Full settings: enable, delay, notification toggle, host block/allow list, custom phrases, recent-closed log. |
-| `src/popup.*` | Quick enable/disable + recent-closed list. |
+| `src/popup.*` | Quick enable/disable, "Close auth tabs now" sweep, recent-closed list. |
 
 ### Safety guards (all in the service worker)
 

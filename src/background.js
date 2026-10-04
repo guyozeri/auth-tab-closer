@@ -2,7 +2,8 @@
  * auth-tab-closer — service worker (classic, so we can importScripts the shared matcher)
  *
  * Receives AUTH_TAB_MATCH from content scripts, applies safety guards, waits a short
- * delay, closes the tab, and shows a reversible notification.
+ * delay, closes the tab, and shows a reversible notification. Also handles the popup's
+ * CLOSE_ALL_AUTH_TABS sweep over every open tab.
  */
 "use strict";
 
@@ -165,7 +166,84 @@ async function handleMatch(msg, senderTab) {
   }, delay);
 }
 
+// Reads a tab's visible text, mirroring content.js's visibleText(). Runs in the page.
+function readPageForSweep() {
+  const body = document.body;
+  const text = body ? (body.innerText || body.textContent || "").slice(0, 20000) : "";
+  return { text, title: document.title, url: location.href, host: location.hostname };
+}
+
+/**
+ * Manual "close all auth tabs" sweep, triggered from the popup. Because the user asked
+ * explicitly, it skips the close delay and age guard and works even while auto-close is
+ * paused — but still never touches pinned tabs, honors the host block/allow list, and
+ * leaves the last tab of a window alone unless closeLastTab is on.
+ */
+async function sweepAuthTabs() {
+  const settings = await getSettings();
+  const tabs = await chrome.tabs.query({});
+
+  const remainingInWindow = new Map();
+  for (const t of tabs) {
+    remainingInWindow.set(t.windowId, (remainingInWindow.get(t.windowId) || 0) + 1);
+  }
+
+  const candidates = tabs.filter(
+    (t) => !t.pinned && !t.discarded && /^(https?|file):/.test(t.url || "")
+  );
+  const pages = await Promise.all(
+    candidates.map(async (t) => {
+      try {
+        const [res] = await chrome.scripting.executeScript({
+          target: { tabId: t.id },
+          func: readPageForSweep,
+        });
+        return { tab: t, page: res && res.result };
+      } catch (_) {
+        return { tab: t, page: null }; // restricted page, crashed, etc.
+      }
+    })
+  );
+
+  let closed = 0;
+  for (const { tab, page } of pages) {
+    if (!page) continue;
+    const host = (page.host || hostOf(tab.url)).toLowerCase();
+    if (!hostAllowedByList(host, settings)) continue;
+    const verdict = AUTH_TAB_RULES.evaluate({
+      text: page.text,
+      title: page.title,
+      host,
+      extraStrongPhrases: settings.extraStrongPhrases,
+    });
+    if (!verdict.match) continue;
+    if (!settings.closeLastTab && remainingInWindow.get(tab.windowId) <= 1) continue;
+
+    try {
+      await chrome.tabs.remove(tab.id);
+    } catch (_) {
+      continue;
+    }
+    remainingInWindow.set(tab.windowId, remainingInWindow.get(tab.windowId) - 1);
+    closed++;
+    await pushRecent({
+      url: page.url || tab.url,
+      title: page.title || tab.title || host,
+      host,
+      reason: "manual sweep, " + verdict.reason,
+      closedAt: Date.now(),
+    });
+  }
+  return { closed };
+}
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg && msg.type === "CLOSE_ALL_AUTH_TABS") {
+    sweepAuthTabs()
+      .then((res) => sendResponse({ ok: true, ...res }))
+      .catch((e) => sendResponse({ ok: false, error: String(e) }));
+    return true; // async response
+  }
   if (msg && msg.type === "AUTH_TAB_MATCH") {
     handleMatch(msg, sender.tab).finally(() => sendResponse({ ok: true }));
     return true; // async response

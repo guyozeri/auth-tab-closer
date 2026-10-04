@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Auth Tab Closer",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Auto-closes finished authentication tabs (\"Login successful — you can close this window\").",
   "icons": {
     "16": "icons/16.png",
@@ -9,7 +9,7 @@
     "48": "icons/48.png",
     "128": "icons/128.png"
   },
-  "permissions": ["tabs", "storage", "notifications"],
+  "permissions": ["tabs", "storage", "notifications", "scripting"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "src/background.js"

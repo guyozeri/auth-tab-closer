@@ -22,6 +22,27 @@ $("enabled").addEventListener("change", (e) => {
   chrome.storage.sync.set({ enabled: e.target.checked }, loadEnabled);
 });
 
+$("sweep").addEventListener("click", () => {
+  const btn = $("sweep");
+  const out = $("sweepResult");
+  btn.disabled = true;
+  btn.textContent = "Checking tabs…";
+  chrome.runtime.sendMessage({ type: "CLOSE_ALL_AUTH_TABS" }, (res) => {
+    btn.disabled = false;
+    btn.textContent = "Close auth tabs now";
+    out.hidden = false;
+    if (chrome.runtime.lastError || !res || !res.ok) {
+      out.textContent = "Couldn't check tabs — try again.";
+      return;
+    }
+    out.textContent =
+      res.closed === 0
+        ? "No open auth tabs found."
+        : "Closed " + res.closed + " auth tab" + (res.closed === 1 ? "" : "s") + ".";
+    renderRecent();
+  });
+});
+
 $("openOptions").addEventListener("click", (e) => {
   e.preventDefault();
   chrome.runtime.openOptionsPage();
