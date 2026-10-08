@@ -3,8 +3,8 @@
 A Chrome extension (Manifest V3) that automatically closes the dead-end tabs left
 behind after you sign into a CLI or tool through the browser — the
 _"Login Successful — you can close this window"_ / _"Authorization complete! —
-you can close this tab"_ screens from Teleport, Cursor/MCP, `gh`, AWS SSO, Google
-device flow, and friends.
+you can close this tab"_ screens that command-line logins, single sign-on, and
+device-code flows leave open.
 
 When a tab is closed you get a Chrome notification with a **Reopen** button, and
 the last several closed tabs are listed in the popup and options page.
